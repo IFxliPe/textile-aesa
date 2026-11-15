@@ -499,7 +499,7 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
 }
 .choix-profil .pastille-ico .ico, .scenario .pastille-ico .ico { stroke-width: 2; }
 .choix-profil b { font-size: 14.5px; line-height: 1.25; display: block; }
-.choix-profil span { font-size: 12.5px; color: var(--encre-3); display: block; margin-top: 2px; }
+.choix-profil span:not(.pastille-ico) { font-size: 12.5px; color: var(--encre-3); display: block; margin-top: 2px; }
 .choix-profil .mini-flux { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
 .choix-profil .mini-flux small { font-size: 12px; font-weight: 500; color: var(--encre-3); }
 .choix-profil[aria-pressed="true"] { background: var(--encre); color: var(--carte); border-color: var(--encre); }
@@ -671,10 +671,27 @@ input[type="range"]:hover::-moz-range-thumb { transform: scale(1.18); }
 input[type="range"]:active::-moz-range-thumb { transform: scale(1.28); }
 
 /* Reflet : une lumière douce qui suit la souris sur les grandes cartes colorées. */
+/* Un disque de lumière de taille fixe, déplacé par transform (aucun redessin pendant le mouvement). */
 .reflet {
-  position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit; opacity: var(--lo, 0);
-  background: radial-gradient(400px circle at var(--lx, 50%) var(--ly, 50%), rgba(255, 255, 255, .3), transparent 62%);
+  position: absolute; left: 0; top: 0; z-index: -1; width: 760px; height: 760px; margin: -380px 0 0 -380px;
+  pointer-events: none; opacity: 0; will-change: transform, opacity;
+  background: radial-gradient(circle closest-side, rgba(255, 255, 255, .3), rgba(255, 255, 255, .1) 45%, rgba(255, 255, 255, 0));
 }
+
+/* Changement de page (app.js, « naviguer ») : seule la zone centrale glisse, dans le sens de la navigation. */
+:root[data-sens] .principal { view-transition-name: page; }
+:root[data-sens="arriere"] { --sens: -1; }
+:root[data-sens]::view-transition-group(page) { animation-duration: .34s; animation-timing-function: var(--ressort); }
+:root[data-sens]::view-transition-old(page) { animation: page-part .2s cubic-bezier(.4, 0, 1, 1) both; }
+:root[data-sens]::view-transition-new(page) { animation: page-arrive .34s var(--ressort) .04s both; }
+@keyframes page-part { to { opacity: 0; transform: translateX(calc(var(--sens, 1) * -18px)); } }
+@keyframes page-arrive { from { opacity: 0; transform: translateX(calc(var(--sens, 1) * 30px)); } }
+
+/* Ouverture du site : l'écran verrouillé se dissout (flou, léger zoom) et le tableau de bord apparaît. */
+:root[data-ouverture]::view-transition-old(root) { animation: sas-part .5s cubic-bezier(.4, 0, .9, .6) both; }
+:root[data-ouverture]::view-transition-new(root) { animation: tableau-arrive .7s var(--ressort) .1s both; }
+@keyframes sas-part { to { opacity: 0; transform: scale(1.07); filter: blur(14px); } }
+@keyframes tableau-arrive { from { opacity: 0; transform: scale(.975); } }
 
 /* ===================================================== ANIMATIONS */
 /* Entrée d'une vue, à la première visite seulement : la carte principale mène, les autres suivent. */

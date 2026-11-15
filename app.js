@@ -88,6 +88,14 @@ if (window.top !== window.self) {
   const mouvementReduit = () => requeteMouvement.matches;
   const apres = (ms, f) => setTimeout(f, mouvementReduit() ? 0 : ms);
   const prochaineImage = f => requestAnimationFrame(() => requestAnimationFrame(f));
+  // Transition de vue du navigateur. Si une autre la remplace (clics rapides), ses promesses sont rejetées :
+  // on l'accepte sans erreur dans la console, et « apres » s'exécute dans tous les cas.
+  function transitionVue(maj, apres = () => {}) {
+    const t = document.startViewTransition(maj);
+    t.ready.catch(() => {});
+    t.finished.then(apres, apres);
+    return t;
+  }
 
   /* ------------------------------------------------------------ infobulle */
   const bulle = $('#infobulle');
@@ -414,7 +422,7 @@ if (window.top !== window.self) {
       return section ? { vue: section.dataset.vue, el } : { vue: 'apercu' };
     };
 
-    function afficher() {
+    function afficher(enTransition = false) {
       const { vue, el } = cible();
       const section = document.querySelector(`.vue[data-vue="${vue}"]`);
       $$('.vue').forEach(v => { v.hidden = v !== section; });
@@ -434,14 +442,30 @@ if (window.top !== window.self) {
         section.classList.add('entree');
         $$('.compte', section).forEach((c, i) => compter(c, i ? 800 : 1100));
         (premieresVisites[vue] || []).forEach(f => f());
-      } else {
+      } else if (!enTransition) {
         section.classList.add('retour');
       }
       if (el) el.scrollIntoView({ behavior: mouvementReduit() ? 'auto' : 'smooth', block: 'start' });
       else window.scrollTo(0, 0);
     }
-    addEventListener('hashchange', afficher);
-    afficher();
+
+    // Changement de page : la nouvelle page glisse depuis le côté où l'on va (page suivante depuis la droite,
+    // précédente depuis la gauche). Seule la zone centrale bouge ; la barre du haut et le rail restent fixes.
+    let vueActuelle = null, jeton = 0;
+    function naviguer() {
+      const { vue } = cible();
+      const avant = vueActuelle;
+      vueActuelle = vue;
+      if (!avant || avant === vue || !document.startViewTransition || mouvementReduit()) return afficher();
+      const moi = ++jeton;
+      racine.dataset.sens = VUES.indexOf(vue) > VUES.indexOf(avant) ? 'avant' : 'arriere';
+      window.scrollTo(0, 0);   // l'ancienne page part d'en haut, comme la nouvelle : pas de saut vertical
+      transitionVue(() => afficher(true), () => {
+        if (moi === jeton) delete racine.dataset.sens;   // un clic rapide a pu lancer une autre transition
+      });
+    }
+    addEventListener('hashchange', naviguer);
+    naviguer();
   }
 
   // La carte principale mène et monte le plus ; les suivantes suivent avec des écarts qui raccourcissent.
@@ -476,10 +500,10 @@ if (window.top !== window.self) {
       const r = boutonTheme.getBoundingClientRect();
       const x = r.left + r.width / 2, y = r.top + r.height / 2;
       const rayon = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
-      document.startViewTransition(appliquer).ready.then(() => {
+      transitionVue(appliquer).ready.then(() => {
         racine.animate({ clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${rayon}px at ${x}px ${y}px)`] },
           { duration: 560, easing: 'cubic-bezier(.2, .8, .2, 1)', pseudoElement: '::view-transition-new(root)' });
-      });
+      }, () => { /* transition interrompue : le thème est quand même appliqué */ });
     });
     $('#bouton-verrou').addEventListener('click', () => {
       try { sessionStorage.removeItem(CLE_SESSION); } catch (e) { /* rien à effacer */ }
@@ -604,14 +628,17 @@ if (window.top !== window.self) {
   function lentille(conteneur, selecteur, { axe = 'y', portee = 46, porteur = el => el } = {}) {
     if (!conteneur) return;
     conteneur.classList.add('lentille');
-    let elements = [], porteurs = [], centres = [], forces = [], actif = false;
+    let elements = [], porteurs = [], centres = [], forces = [], ecrits = [], actif = false, ecritA = '';
     const activite = ressort(.25);
+    // On n'écrit une valeur que si elle a changé : un élément au repos ne coûte rien au navigateur.
     const lancer = boucle(dt => {
       let encore = activite.pas(dt);
-      conteneur.style.setProperty('--a', activite.x.toFixed(3));
+      const a = activite.x.toFixed(2);
+      if (a !== ecritA) { conteneur.style.setProperty('--a', a); ecritA = a; }
       forces.forEach((f, i) => {
         if (f.pas(dt)) encore = true;
-        porteurs[i].style.setProperty('--t', f.x.toFixed(3));
+        const t = f.x.toFixed(3);
+        if (t !== ecrits[i]) { porteurs[i].style.setProperty('--t', t); ecrits[i] = t; }
       });
       return encore;
     });
@@ -623,6 +650,7 @@ if (window.top !== window.self) {
         elements = nouveaux;
         porteurs = elements.map(porteur);
         forces = elements.map(() => ressort(.2));
+        ecrits = [];
       }
       const r0 = conteneur.getBoundingClientRect();
       centres = elements.map(el => {
@@ -676,23 +704,36 @@ if (window.top !== window.self) {
   }
 
   /* --------------------------------------------- reflet sur les grandes cartes */
-  // Une lumière douce suit la souris sur les cartes colorées, comme sur un tissu satiné.
+  // Une lumière douce suit la souris sur les cartes colorées, comme sur un tissu satiné, et le bouton
+  // blanc de la carte se laisse un peu attirer par la souris quand elle s'en approche.
+  // Tout passe par transform et opacity : le navigateur déplace des calques sans rien redessiner.
   function reflets() {
     $$('.heros, .heros-profil').forEach(carte => {
-      carte.prepend(h('span', { classe: 'reflet', 'aria-hidden': 'true' }));
+      const reflet = h('span', { classe: 'reflet', 'aria-hidden': 'true' });
+      carte.prepend(reflet);
+      const bouton = $('.bouton-blanc', carte);
       const X = ressort(.2, 1, .05), Y = ressort(.2, 1, .05), O = ressort(.3);
+      const BX = ressort(.35, .7, .05), BY = ressort(.35, .7, .05);
       let actif = false;
       const lancer = boucle(dt => {
-        const encore = [X.pas(dt), Y.pas(dt), O.pas(dt)].some(Boolean);
-        carte.style.setProperty('--lx', X.x.toFixed(1) + 'px');
-        carte.style.setProperty('--ly', Y.x.toFixed(1) + 'px');
-        carte.style.setProperty('--lo', O.x.toFixed(3));
+        const encore = [X.pas(dt), Y.pas(dt), O.pas(dt), BX.pas(dt), BY.pas(dt)].some(Boolean);
+        reflet.style.transform = `translate3d(${X.x.toFixed(1)}px,${Y.x.toFixed(1)}px,0)`;
+        reflet.style.opacity = O.x.toFixed(3);
+        if (bouton) bouton.style.translate = BX.x || BY.x ? `${BX.x.toFixed(2)}px ${BY.x.toFixed(2)}px` : '';
         return encore;
       });
       const viser = (e, sauter) => {
         const r = carte.getBoundingClientRect();
         const x = e.clientX - r.left, y = e.clientY - r.top;
         if (sauter) { X.saut(x); Y.saut(y); } else { X.cible = x; Y.cible = y; }
+        if (bouton) {
+          // Position du bouton sans son déplacement actuel, pour que l'attraction ne s'emballe pas.
+          const b = bouton.getBoundingClientRect();
+          const dx = e.clientX - (b.left + b.width / 2 - BX.x), dy = e.clientY - (b.top + b.height / 2 - BY.x);
+          const proche = Math.hypot(dx, dy) < Math.max(b.width, b.height) * .5 + 40;
+          BX.cible = proche ? borne(dx * .18, -7, 7) : 0;
+          BY.cible = proche ? borne(dy * .25, -5, 5) : 0;
+        }
         lancer();
       };
       carte.addEventListener('pointerenter', e => {
@@ -700,7 +741,7 @@ if (window.top !== window.self) {
         if (actif) { O.cible = 1; viser(e, true); }
       });
       carte.addEventListener('pointermove', e => { if (actif) viser(e, false); });
-      carte.addEventListener('pointerleave', () => { if (actif) { O.cible = 0; lancer(); } });
+      carte.addEventListener('pointerleave', () => { if (actif) { O.cible = 0; BX.cible = 0; BY.cible = 0; lancer(); } });
     });
   }
 
@@ -1387,11 +1428,17 @@ if (window.top !== window.self) {
 
   async function afficherContenu(paquet, cle) {
     try { sessionStorage.setItem(CLE_SESSION, versB64(await crypto.subtle.exportKey('raw', cle))); } catch (e) { /* session non mémorisée */ }
-    const contenu = $('#contenu');
-    contenu.innerHTML = paquet.html;
-    $('#sas').remove();
-    contenu.hidden = false;
-    demarrer(paquet.donnees);
+    const ouvrir = () => {
+      const contenu = $('#contenu');
+      contenu.innerHTML = paquet.html;
+      $('#sas').remove();
+      contenu.hidden = false;
+      demarrer(paquet.donnees);
+    };
+    if (!document.startViewTransition || mouvementReduit()) return ouvrir();
+    // Le seul moment mis en scène du site : l'écran verrouillé se dissout et le tableau de bord apparaît.
+    racine.dataset.ouverture = '';
+    transitionVue(ouvrir, () => { delete racine.dataset.ouverture; });
   }
 
   async function initialiserSas() {
