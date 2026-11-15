@@ -343,7 +343,7 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
 }
 .barre-repere { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--encre); left: var(--x, 0%); transition: left .6s var(--ressort); }
 .barre-valeur { position: absolute; z-index: 1; top: 50%; transform: translateY(-50%); left: calc(var(--fin, 0%) + 5px); padding: 0 3px; border-radius: 4px; background: var(--carte); font-size: 13px; font-weight: 600; white-space: nowrap; transition: left .6s var(--ressort); }
-.barre-ref { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 2px solid var(--garance); left: var(--x, 0%); }
+.barre-ref { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--garance); left: var(--x, 0%); }
 .legende { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--encre-2); }
 .legende span { display: inline-flex; align-items: center; gap: 7px; }
 .legende i { width: 11px; height: 11px; border-radius: 3px; background: var(--c); display: inline-block; }
@@ -427,7 +427,7 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
 .ratio-seg.depasse { background: var(--anomalie); }
 .ratio-point { position: absolute; top: 50%; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 2px var(--carte); transition: left .35s var(--ressort), background-color .3s; }
 .ratio-point.depasse { background: var(--anomalie); }
-.limite-1 { position: absolute; top: -6px; bottom: -6px; width: 0; border-left: 2px solid var(--garance); z-index: 1; }
+.limite-1 { position: absolute; top: -6px; bottom: -6px; width: 2px; margin-left: -1px; background: var(--garance); z-index: 1; }
 .ratio-val { text-align: right; font-size: 13px; font-weight: 600; white-space: nowrap; }
 .limite-texte { color: var(--garance-texte); font-weight: 600; }
 .ratios .barre-ligne { grid-template-columns: minmax(150px, 34%) minmax(0, 1fr) 54px; }
@@ -499,7 +499,7 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
 .fourchette::before { content: ""; position: absolute; left: 0; right: 0; top: 8px; height: 2px; background: var(--trait); }
 .fourchette i { position: absolute; top: 5px; height: 8px; border-radius: 4px; background: var(--c); left: var(--de); width: var(--l); }
 .fourchette b { position: absolute; top: 2px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--carte); border: 3px solid var(--c); left: var(--m); }
-.fourchette u { position: absolute; top: 1px; bottom: 1px; left: var(--x); border-left: 1.5px solid var(--garance); }
+.fourchette u { position: absolute; top: 1px; bottom: 1px; left: var(--x); width: 2px; margin-left: -1px; background: var(--garance); }
 
 .formule { font-size: 14.5px; font-weight: 600; background: var(--carte-2); border-radius: 12px; padding: 12px 14px; white-space: nowrap; overflow-x: auto; }
 .formule sub { font-size: .7em; }
