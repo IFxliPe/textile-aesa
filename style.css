@@ -134,15 +134,19 @@ h1, h2, h3 { margin: 0; }
 }
 .logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
 .logo-pastille { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: var(--degrade); color: #fff; }
-.nav-pilule {
-  margin: 0 auto; display: flex; gap: 2px; padding: 4px;
+/* Le fond de la pilule est dessiné à part : il s'allonge quand les mots grossissent sous la souris (--g à gauche, --d à droite). */
+.nav-pilule { position: relative; isolation: isolate; margin: 0 auto; display: flex; gap: 2px; padding: 5px; }
+.nav-pilule::before {
+  content: ""; position: absolute; z-index: -1; top: 0; bottom: 0;
+  left: calc(-1 * var(--g, 0px)); right: calc(-1 * var(--d, 0px));
   background: var(--carte); border: 1px solid var(--trait); border-radius: 999px; box-shadow: var(--ombre);
 }
 .nav-pilule a {
-  padding: 7px 14px; border-radius: 999px; font-size: 14px; font-weight: 500; text-decoration: none;
+  position: relative; padding: 7px 14px; border-radius: 999px; font-size: 14px; font-weight: 500; text-decoration: none;
   color: var(--encre-2); white-space: nowrap; transition: background-color .2s, color .2s;
 }
-.nav-pilule a:hover { color: var(--encre); background: var(--carte-2); }
+.nav-pilule a:hover, .nav-pilule a.proche { color: var(--encre); background: var(--carte-2); }
+.nav-pilule a.devant, .rail a.devant { z-index: 1; }
 .nav-pilule a[aria-current="page"] { background: var(--encre); color: var(--carte); }
 .barre-actions { display: flex; align-items: center; gap: 8px; }
 .groupe-icones { display: flex; gap: 2px; padding: 4px; background: var(--carte); border: 1px solid var(--trait); border-radius: 999px; }
@@ -169,12 +173,13 @@ h1, h2, h3 { margin: 0; }
   color: var(--encre-3); border: 0; background: transparent; text-decoration: none; position: relative;
   transition: background-color .2s, color .2s;
 }
-.rail a:hover, .rail button:hover { color: var(--encre); background: var(--carte-2); }
+.rail a:hover, .rail button:hover, .rail a.proche { color: var(--encre); background: var(--carte-2); }
 .rail a[aria-current="page"] { background: var(--encre); color: var(--carte); }
 .rail hr { width: 20px; border: 0; border-top: 1px solid var(--trait); margin: 6px 0; }
 .rail .ressort { flex: 1; }
 .rail [data-titre]:hover::after, .rail [data-titre]:focus-visible::after {
-  content: attr(data-titre); position: absolute; left: 46px; top: 50%; transform: translateY(-50%);
+  content: attr(data-titre); position: absolute; left: 46px; top: 50%;
+  transform: translateY(-50%) scale(calc(1 / var(--s, 1))); transform-origin: 0 50%; /* garde sa taille quand l'icône grossit */
   background: var(--encre); color: var(--carte); font-size: 12.5px; font-weight: 500; white-space: nowrap;
   padding: 5px 9px; border-radius: 8px; pointer-events: none;
 }
@@ -595,7 +600,12 @@ td.n, th.n { text-align: right; white-space: nowrap; }
   .mesures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 980px) {
-  .nav-pilule { overflow-x: auto; scrollbar-width: none; max-width: 52vw; }
+  /* Pilule défilante : le fond revient sur la barre elle-même, et l'effet loupe est coupé (voir app.js). */
+  .nav-pilule {
+    overflow-x: auto; scrollbar-width: none; max-width: 52vw; padding: 4px;
+    background: var(--carte); border: 1px solid var(--trait); border-radius: 999px; box-shadow: var(--ombre);
+  }
+  .nav-pilule::before { display: none; }
   .nav-pilule::-webkit-scrollbar { display: none; }
   .puce-projet { display: none; }
   .etapes { grid-template-columns: repeat(2, minmax(0, 1fr)); }

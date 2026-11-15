@@ -430,6 +430,99 @@ if (window.top !== window.self) {
       try { sessionStorage.removeItem(CLE_SESSION); } catch (e) { /* rien à effacer */ }
       location.replace(location.pathname);
     });
+    loupe($('.rail'), { horizontal: false, portee: 78, gain: .42, decalage: 9 });
+    loupe($('.nav-pilule'), { horizontal: true, portee: 130, gain: .22 });
+  }
+
+  /* ------------------------------------- effet loupe sur les deux barres de navigation */
+  // Ressort amorti sans rebond (réponse en secondes) : il repart toujours de sa position actuelle,
+  // donc la souris peut changer de direction à tout moment sans à-coup.
+  function ressort(reponse = .22) {
+    const k = (2 * Math.PI / reponse) ** 2, c = 4 * Math.PI / reponse;
+    return {
+      x: 0, v: 0, cible: 0,
+      pas(dt) {
+        for (let i = 0; i < 4; i++) { this.v += (-k * (this.x - this.cible) - c * this.v) * dt / 4; this.x += this.v * dt / 4; }
+        if (Math.abs(this.x - this.cible) < .002 && Math.abs(this.v) < .02) { this.x = this.cible; this.v = 0; return false; }
+        return true;
+      },
+    };
+  }
+
+  // Comme le Dock du Mac : ce qui est près de la souris grossit.
+  // Rail : les icônes grossissent et sortent un peu vers la droite.
+  // Barre du haut : les mots grossis s'écartent, le point sous la souris reste sous la souris,
+  // et le fond de la pilule s'allonge des deux côtés pour les contenir.
+  function loupe(nav, { horizontal, portee, gain, decalage = 0 }) {
+    const liens = $$('a', nav);
+    const forces = liens.map(() => ressort());
+    let mesures = [], q = 0, actif = false, image = 0, dernier = 0;
+
+    // Positions au repos (offsetLeft / offsetTop ignorent les transformations en cours).
+    const mesurer = () => {
+      mesures = liens.map(l => (horizontal ? { debut: l.offsetLeft, taille: l.offsetWidth } : { debut: l.offsetTop, taille: l.offsetHeight }));
+    };
+
+    function dessiner() {
+      const t = forces.map(f => f.x);
+      if (horizontal) {
+        const ajouts = mesures.map((m, i) => m.taille * gain * t[i]);
+        let k = mesures.findIndex(m => q < m.debut + m.taille);
+        if (k < 0) k = mesures.length - 1;
+        let ancrage = borne((q - mesures[k].debut) / mesures[k].taille, 0, 1) * ajouts[k];
+        for (let i = 0; i < k; i++) ancrage += ajouts[i];
+        let cumul = 0;
+        liens.forEach((l, i) => {
+          const dx = cumul + ajouts[i] / 2 - ancrage;
+          cumul += ajouts[i];
+          l.style.transform = t[i] > .001 || Math.abs(dx) > .05 ? `translate3d(${dx.toFixed(2)}px,0,0) scale(${(1 + gain * t[i]).toFixed(4)})` : '';
+          l.classList.toggle('devant', t[i] > .4);
+        });
+        nav.style.setProperty('--g', ancrage.toFixed(2) + 'px');
+        nav.style.setProperty('--d', (cumul - ancrage).toFixed(2) + 'px');
+      } else {
+        liens.forEach((l, i) => {
+          l.style.transform = t[i] > .001 ? `translate3d(${(decalage * t[i]).toFixed(2)}px,0,0) scale(${(1 + gain * t[i]).toFixed(4)})` : '';
+          l.style.setProperty('--s', (1 + gain * t[i]).toFixed(4));
+          l.classList.toggle('devant', t[i] > .4);
+        });
+      }
+    }
+    function tic(maintenant) {
+      const dt = Math.min((maintenant - dernier) / 1000, 1 / 30);
+      dernier = maintenant;
+      let encore = false;
+      forces.forEach(f => { encore = f.pas(dt) || encore; });
+      dessiner();
+      image = encore ? requestAnimationFrame(tic) : 0;
+    }
+    const lancer = () => { if (!image) { dernier = performance.now(); image = requestAnimationFrame(tic); } };
+
+    nav.addEventListener('pointerenter', e => {
+      // Pas au doigt, pas si l'utilisateur a demandé moins d'animations, pas quand la pilule défile (écran étroit).
+      actif = e.pointerType !== 'touch' && !mouvementReduit() && (!horizontal || getComputedStyle(nav).overflowX === 'visible');
+      if (actif) mesurer();
+    });
+    nav.addEventListener('pointermove', e => {
+      if (!actif) return;
+      const r = nav.getBoundingClientRect();
+      q = horizontal ? e.clientX - r.left - nav.clientLeft : e.clientY - r.top - nav.clientTop;
+      let proche = null, ecart = Infinity;
+      mesures.forEach((m, i) => {
+        const d = Math.abs(m.debut + m.taille / 2 - q);
+        const u = Math.max(0, 1 - d / portee);
+        forces[i].cible = u * u * (3 - 2 * u);
+        if (d < ecart) { ecart = d; proche = liens[i]; }
+      });
+      liens.forEach(l => l.classList.toggle('proche', l === proche));
+      lancer();
+    });
+    nav.addEventListener('pointerleave', () => {
+      if (!actif) return;
+      forces.forEach(f => { f.cible = 0; });
+      liens.forEach(l => l.classList.remove('proche'));
+      lancer();
+    });
   }
 
   /* -------------------------------------------------------------- aperçu */
