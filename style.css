@@ -288,7 +288,7 @@ p { max-width: var(--mesure); }
 
 .curseur { display: grid; gap: 6px; margin-bottom: 18px; }
 .curseur-tete { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
-.curseur-tete output { font-weight: 600; font-variant-numeric: tabular-nums; }
+.curseur-tete output { font-weight: 600; }
 input[type="range"] {
   -webkit-appearance: none; appearance: none; width: 100%; height: 28px; background: transparent; cursor: pointer;
   --pct: 50%;
@@ -316,7 +316,7 @@ select {
 /* ------------------------------------------------------------ graphiques */
 .graphique { position: relative; width: 100%; min-width: 0; }
 .graphique svg { width: 100%; overflow: visible; }
-.graphique text { fill: var(--encre-3); font: 400 12.5px var(--texte); font-variant-numeric: tabular-nums; }
+.graphique text { fill: var(--encre-3); font: 400 12.5px var(--texte); }
 .graphique .valeur { fill: var(--encre); font-weight: 600; }
 .graphique .grille line, .graphique .axe { stroke: var(--trait); stroke-width: 1; shape-rendering: crispEdges; }
 .graphique .reference { stroke: var(--garance); stroke-width: 1.5; }
@@ -350,7 +350,7 @@ select {
 }
 .barre-valeur {
   position: absolute; top: 50%; transform: translateY(-50%); left: calc(var(--fin, 0%) + 8px);
-  font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap;
+  font-size: 13.5px; font-weight: 600; white-space: nowrap;
   transition: left .6s var(--ressort);
 }
 .barre-ref {
@@ -395,7 +395,7 @@ select {
 .chaleur { display: grid; gap: 2px; font-size: 13px; }
 .chaleur-cellule {
   height: 40px; border-radius: 3px; border: 0; padding: 0; cursor: default;
-  display: grid; place-items: center; font-variant-numeric: tabular-nums; font-size: 12.5px;
+  display: grid; place-items: center; font-size: 12.5px;
   transition: transform .15s var(--ressort);
 }
 .chaleur-cellule:hover, .chaleur-cellule:focus-visible { transform: scale(1.06); position: relative; z-index: 1; }
@@ -449,7 +449,7 @@ select {
 .scenario .part { color: var(--encre-3); font-size: 14.5px; margin: 0 0 18px; }
 .scenario dl { margin: 0; display: grid; gap: 12px; }
 .scenario dt { font-size: 13.5px; color: var(--encre-3); }
-.scenario dd { margin: 0; font-weight: 600; font-size: 17px; font-variant-numeric: tabular-nums; }
+.scenario dd { margin: 0; font-weight: 600; font-size: 17px; }
 .fourchette { position: relative; height: 18px; margin-top: 6px; }
 .fourchette::before { content: ""; position: absolute; left: 0; right: 0; top: 8px; height: 2px; background: var(--trait); }
 .fourchette i {
@@ -503,7 +503,7 @@ details.donnees { margin-top: 14px; font-size: 14px; }
 details.donnees summary { cursor: pointer; color: var(--encre-3); width: max-content; max-width: 100%; }
 details.donnees summary:hover { color: var(--encre); }
 .tableau-defile { overflow-x: auto; margin-top: 10px; }
-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+table { border-collapse: collapse; width: 100%; }
 th, td { padding: 7px 10px; border-bottom: 1px solid var(--trait); text-align: left; vertical-align: top; }
 th { font-weight: 600; color: var(--encre-2); font-size: 13.5px; }
 td.n, th.n { text-align: right; white-space: nowrap; }
@@ -529,7 +529,7 @@ td.n, th.n { text-align: right; white-space: nowrap; }
 
 /* --------------------------------------------- pistes communes (HTML) */
 .axe-ligne { margin-top: 2px; }
-.axe-graduations { position: relative; height: 18px; font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.axe-graduations { position: relative; height: 18px; font-size: 12px; color: var(--encre-3); }
 .axe-graduations span { position: absolute; left: var(--x); transform: translateX(-50%); white-space: nowrap; }
 .axe-graduations span:first-child { transform: none; }
 .axe-graduations span:last-child { transform: translateX(-100%); }
@@ -539,7 +539,7 @@ td.n, th.n { text-align: right; white-space: nowrap; }
   position: absolute; top: 50%; left: var(--x); width: 12px; height: 12px; margin: -6px 0 0 -6px;
   border-radius: 50%; background: var(--p1); box-shadow: 0 0 0 2px var(--surface);
 }
-.ecart-val { position: absolute; top: 50%; left: calc(var(--x) + 12px); transform: translateY(-50%); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ecart-val { position: absolute; top: 50%; left: calc(var(--x) + 12px); transform: translateY(-50%); font-size: 13px; font-weight: 600; }
 
 .fourchette-piste { height: 26px; }
 .fourchette-seg {
@@ -553,7 +553,7 @@ td.n, th.n { text-align: right; white-space: nowrap; }
 }
 .fourchette-val {
   position: absolute; top: 50%; left: calc(var(--x, 0%) + 12px); transform: translateY(-50%);
-  font-size: 13.5px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; transition: left .6s var(--ressort);
+  font-size: 13.5px; font-weight: 600; white-space: nowrap; transition: left .6s var(--ressort);
 }
 
 .foret-dimension { margin: 12px 0 0; font-size: 14px; }
@@ -567,7 +567,7 @@ td.n, th.n { text-align: right; white-space: nowrap; }
 }
 .foret-piste.net .foret-ic { background: var(--p1); }
 .foret-piste.net .foret-point { background: var(--p1); border-color: var(--p1); }
-.foret-val { position: absolute; top: 50%; transform: translateY(-50%); font-size: 12.5px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.foret-val { position: absolute; top: 50%; transform: translateY(-50%); font-size: 12.5px; font-weight: 600; white-space: nowrap; }
 .foret-val.droite { left: calc(var(--x) + 7px); }
 .foret-val.gauche { right: calc(100% - var(--x) + 7px); }
 .legende .rond { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--encre-3); background: var(--surface); }
@@ -609,7 +609,7 @@ td.n, th.n { text-align: right; white-space: nowrap; }
   background: var(--ok); box-shadow: 0 0 0 2px var(--surface); transition: left .35s var(--ressort), background-color .3s;
 }
 .ratio-point.depasse { background: var(--anomalie); }
-.ratio-val { text-align: right; font-size: 13.5px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ratio-val { text-align: right; font-size: 13.5px; font-weight: 600; white-space: nowrap; }
 .limite-texte { color: var(--garance); font-weight: 600; }
 
 /* Corrélations (barres divergentes autour de 0) */
@@ -619,7 +619,7 @@ td.n, th.n { text-align: right; white-space: nowrap; }
 }
 .sp-barre.positive { border-radius: 0 4px 4px 0; }
 .sp-barre.negative { border-radius: 4px 0 0 4px; background: var(--p2); }
-.sp-val { position: absolute; top: 50%; transform: translateY(-50%); font-size: 13px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sp-val { position: absolute; top: 50%; transform: translateY(-50%); font-size: 13px; font-weight: 600; white-space: nowrap; }
 .sp-val.droite { left: calc(var(--x) + 6px); }
 .sp-val.gauche { right: calc(100% - var(--x) + 6px); }
 
