@@ -1,6 +1,6 @@
 /* Consommation textile et AESA – feuille de style
    Indigo (teinture du denim) et rouge garance, surfaces froides.
-   Bodoni Moda pour les titres, Instrument Sans pour le texte et les chiffres. */
+   Bodoni Moda pour les titres, Schibsted Grotesk pour le texte et les chiffres. */
 
 @font-face {
   font-family: "Bodoni Moda";
@@ -9,10 +9,9 @@
   font-display: swap;
 }
 @font-face {
-  font-family: "Instrument Sans";
-  src: url("polices/instrument-sans.woff2") format("woff2");
-  font-weight: 400 700;
-  font-stretch: 75% 100%;
+  font-family: "Schibsted Grotesk";
+  src: url("polices/schibsted-grotesk.woff2") format("woff2");
+  font-weight: 400 900;
   font-display: swap;
 }
 
@@ -43,7 +42,7 @@
   --dort: #39457f;
 
   --titre: "Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
-  --texte: "Instrument Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --texte: "Schibsted Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
 
   --mesure: 64ch;
   --largeur: 1160px;
@@ -249,9 +248,8 @@ a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; 
 p { max-width: var(--mesure); }
 .sous-titre { color: var(--encre-3); font-size: 15px; margin: 0 0 18px; }
 .indicateur-reussite {
-  margin-top: 22px; max-width: var(--mesure);
-  padding: 14px 18px; border-left: 3px solid var(--garance);
-  background: var(--surface); border-radius: 0 var(--rayon) var(--rayon) 0;
+  margin-top: 28px; max-width: var(--mesure);
+  padding: 16px 0 0; border-top: 1px solid var(--trait-fort);
   font-size: 15px; color: var(--encre-2);
 }
 .indicateur-reussite strong { color: var(--encre); }
@@ -445,7 +443,8 @@ select {
 
 /* -------------------------------------------------------------- scénarios */
 .scenarios { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-.scenario { background: var(--surface); border-radius: var(--rayon); padding: 22px; border-top: 4px solid var(--c); min-width: 0; }
+.scenario { background: var(--surface); border-radius: var(--rayon); padding: 22px; min-width: 0; }
+.scenario::before { content: ""; display: block; width: 26px; height: 6px; border-radius: 3px; background: var(--c); margin-bottom: 14px; }
 .scenario h3 { font: 500 30px/1.1 var(--titre); margin: 0 0 4px; }
 .scenario .part { color: var(--encre-3); font-size: 14.5px; margin: 0 0 18px; }
 .scenario dl { margin: 0; display: grid; gap: 12px; }
