@@ -352,6 +352,8 @@ if (window.top !== window.self) {
   }
 
   /* ======================================================== APPLICATION */
+  // Couleur d'une icône posée sur la couleur pleine d'un profil : var(--p4) → var(--sur-p4) (blanc, ou foncé sur le jaune).
+  const surCouleur = couleur => couleur.replace('var(--p', 'var(--sur-p');
   const VUES = ['apercu', 'achats', 'garde-robe', 'facteurs', 'profils', 'impact', 'vous', 'methode'];
   const TITRES = { apercu: 'Aperçu', achats: 'Achats', 'garde-robe': 'Garde-robe', facteurs: 'Facteurs', profils: 'Profils', impact: 'Impact', vous: 'Et vous ?', methode: 'Méthode' };
   const premieresVisites = {};
@@ -803,7 +805,7 @@ if (window.top !== window.self) {
       h('div', {}, h('b', { texte: r.libelle }), h('small', { texte: r.detail })),
       h('span', { classe: 'val', texte: r.valeur }))));
 
-    $('#barre-profils').replaceChildren(...D.profils.map((p, i) => h('i', { vars: { '--part': p.poids_pct, '--c': COULEURS[p.id], '--i': i } }, ico(p.icone))));
+    $('#barre-profils').replaceChildren(...D.profils.map((p, i) => h('i', { vars: { '--part': p.poids_pct, '--c': COULEURS[p.id], '--sur-c': surCouleur(COULEURS[p.id]), '--i': i } }, ico(p.icone))));
     $('#legende-profils').replaceChildren(...D.profils.map(p => h('span', {}, h('i', { vars: { '--c': COULEURS[p.id] } }), p.profil, h('b', { texte: pct(p.poids_pct) }))));
 
     const penderie = creerPenderie($('#penderie-apercu'), {
@@ -1029,7 +1031,7 @@ if (window.top !== window.self) {
     const heros = $('#heros-profil');
 
     const boutons = D.profils.map(p => h('button', {
-      type: 'button', classe: 'choix-profil', vars: { '--c': COULEURS[p.id] }, 'aria-pressed': 'false', onclick: () => choisir(p.id),
+      type: 'button', classe: 'choix-profil', vars: { '--c': COULEURS[p.id], '--sur-c': surCouleur(COULEURS[p.id]) }, 'aria-pressed': 'false', onclick: () => choisir(p.id),
     }, h('span', { classe: 'pastille-ico' }, ico(p.icone)),
     h('div', {}, h('b', { texte: p.profil }), h('span', { texte: `${pct(p.poids_pct)} des Français` })),
     h('div', { classe: 'mini-flux' }, nb(p.flux_moyenne), h('small', { texte: ' pièces / an' }))));
