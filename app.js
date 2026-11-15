@@ -84,7 +84,8 @@ if (window.top !== window.self) {
     };
   }
 
-  const mouvementReduit = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const requeteMouvement = matchMedia('(prefers-reduced-motion: reduce)');
+  const mouvementReduit = () => requeteMouvement.matches;
   const apres = (ms, f) => setTimeout(f, mouvementReduit() ? 0 : ms);
   const prochaineImage = f => requestAnimationFrame(() => requestAnimationFrame(f));
 
@@ -133,6 +134,7 @@ if (window.top !== window.self) {
       return b;
     });
     conteneur.replaceChildren(...boutons);
+    if (!conteneur.dataset.loupe) { conteneur.dataset.loupe = '1'; loupe(conteneur, { horizontal: true, portee: 110, gain: .16 }); }
     return { choisir(val) { boutons.forEach((b, i) => b.setAttribute('aria-pressed', String(options[i][0] === val))); } };
   }
 
@@ -234,6 +236,8 @@ if (window.top !== window.self) {
     }));
     let etat = { portees: 0, dormantes: 0, colorier: null };
     let pieces = [], groupeNotes = null, pas = 0, notesVisibles = false;
+    // Pour le balancement : la partie qui pivote, le tissu, le bas de chaque pièce, son statut, son angle et sa vitesse.
+    let balanciers = [], tissus = [], fonds = [], statuts = [], angles = [], vitesses = [];
     const reserve = notes ? 46 : 0;
 
     function corps(cx, l, haut, bas) {
@@ -249,10 +253,14 @@ if (window.top !== window.self) {
       pieces = formes.map((f, i) => {
         const cx = pas * (i + 0.5), l = Math.max(1.4, pas * f.l), haut = 15, bas = haut + (hauteur - haut - 4) * f.ht;
         const g = s('g', { classe: 'piece absente' }, svg);
-        s('path', { classe: 'crochet', d: pas > 7 ? `M${cx - 2.2},7.5Q${cx},2 ${cx + 2.2},6.5M${cx},7v${haut - 7}` : `M${cx},6v${haut - 6}` }, g);
-        s('path', { classe: 'corps', d: corps(cx, l, haut, bas) }, g);
+        balanciers[i] = s('g', { classe: 'balancier' }, g);
+        s('path', { classe: 'crochet', d: pas > 7 ? `M${cx - 2.2},7.5Q${cx},2 ${cx + 2.2},6.5M${cx},7v${haut - 7}` : `M${cx},6v${haut - 6}` }, balanciers[i]);
+        tissus[i] = s('path', { classe: 'corps', d: corps(cx, l, haut, bas) }, balanciers[i]);
+        fonds[i] = bas;
         return g;
       });
+      angles = new Float64Array(capacite);
+      vitesses = new Float64Array(capacite);
       if (notes) groupeNotes = s('g', { classe: notesVisibles ? 'notes visible' : 'notes' }, svg);
       conteneur.replaceChildren(svg);
       appliquer(false);
@@ -266,10 +274,52 @@ if (window.top !== window.self) {
         const statut = i < np ? 'portee' : i < total ? 'dort' : 'absente';
         g.style.setProperty('--retard', Math.max(0, sens > 0 ? i : total - i) * pasRetard + 'ms');
         g.setAttribute('class', 'piece ' + statut);
+        statuts[i] = statut;
         const couleur = statut === 'absente' ? null : etat.colorier ? etat.colorier(i, statut) : statut === 'portee' ? TEINTES_PORTEES[formes[i].teinte] : null;
-        g.lastChild.style.fill = couleur || '';
+        tissus[i].style.fill = couleur || '';
       });
     }
+
+    // Balancement : la main (souris ou doigt) qui traverse la penderie pousse les vêtements. Chacun oscille
+    // autour de son crochet comme un pendule amorti, entraîne un peu ses voisins, puis s'immobilise.
+    const RAIDEUR = 34, AMORTI = 3.6, COUPLAGE = 9, ANGLE_MAX = 14;
+    let imageBalance = 0, tBalance = 0, precedent = null;
+    function balancer(t) {
+      const dt = Math.min((t - tBalance) / 1000, 1 / 30), n = pieces.length;
+      tBalance = t;
+      let encore = false;
+      for (let i = 0; i < n; i++) {
+        const gauche = i > 0 ? angles[i - 1] : angles[i], droite = i < n - 1 ? angles[i + 1] : angles[i];
+        vitesses[i] += (-RAIDEUR * angles[i] - AMORTI * vitesses[i] + COUPLAGE * (gauche + droite - 2 * angles[i])) * dt;
+      }
+      for (let i = 0; i < n; i++) {
+        const avant = angles[i];
+        angles[i] = borne(angles[i] + vitesses[i] * dt, -ANGLE_MAX, ANGLE_MAX);
+        if (Math.abs(angles[i]) < .04 && Math.abs(vitesses[i]) < .3) { angles[i] = 0; vitesses[i] = 0; } else encore = true;
+        if (angles[i] !== avant) balanciers[i].style.transform = angles[i] ? `rotate(${angles[i].toFixed(2)}deg)` : '';
+      }
+      imageBalance = encore ? requestAnimationFrame(balancer) : 0;
+    }
+    conteneur.addEventListener('pointermove', e => {
+      if (mouvementReduit() || !pieces.length) return;
+      const r = conteneur.getBoundingClientRect();
+      const x = e.clientX - r.left, y = e.clientY - r.top;
+      if (precedent && e.timeStamp - precedent.t < 120) {
+        const vx = (x - precedent.x) / (Math.max(8, e.timeStamp - precedent.t) / 1000);   // px par seconde
+        const de = Math.min(x, precedent.x), a = Math.max(x, precedent.x);
+        const i0 = Math.max(0, Math.floor((de - pas) / pas)), i1 = Math.min(pieces.length - 1, Math.floor((a + pas) / pas));
+        for (let i = i0; i <= i1; i++) {
+          if (statuts[i] === 'absente' || y > fonds[i] + 4) continue;
+          const cx = pas * (i + 0.5);
+          const effleure = Math.max(0, 1 - Math.max(0, de - cx, cx - a) / pas);   // 1 si la main est passée dessus
+          // Vers la droite, le bas du vêtement part à droite : rotation négative (sens antihoraire à l'écran).
+          vitesses[i] = borne(vitesses[i] - vx * 0.03 * effleure, -120, 120);
+        }
+        if (!imageBalance) { tBalance = performance.now(); imageBalance = requestAnimationFrame(balancer); }
+      }
+      precedent = { x, t: e.timeStamp };
+    });
+    conteneur.addEventListener('pointerleave', () => { precedent = null; });
 
     function dessinerNotes() {
       if (!groupeNotes) return;
@@ -335,7 +385,10 @@ if (window.top !== window.self) {
     simulateur(D, pop);
     etVous(D, COULEURS, pop, climat);
     methode(D);
+    lentilles();
+    reflets();
     routeur();
+    goutteOnglets();
   }
 
   /* --------------------------------------------- navigation entre les pages */
@@ -435,18 +488,32 @@ if (window.top !== window.self) {
   }
 
   /* ------------------------------------- effet loupe sur les deux barres de navigation */
-  // Ressort amorti sans rebond (réponse en secondes) : il repart toujours de sa position actuelle,
-  // donc la souris peut changer de direction à tout moment sans à-coup.
-  function ressort(reponse = .22) {
-    const k = (2 * Math.PI / reponse) ** 2, c = 4 * Math.PI / reponse;
+  // Ressort amorti (réponse en secondes ; amorti 1 = sans rebond, moins de 1 = léger rebond) : il repart
+  // toujours de sa position et de sa vitesse actuelles, donc le pointeur peut changer d'avis à tout moment
+  // sans à-coup. « precision » : écart sous lequel on le considère arrivé (0,002 pour 0 → 1, 0,05 pour des pixels).
+  function ressort(reponse = .22, amorti = 1, precision = .002) {
+    const k = (2 * Math.PI / reponse) ** 2, c = 4 * Math.PI * amorti / reponse;
     return {
       x: 0, v: 0, cible: 0,
       pas(dt) {
+        if (mouvementReduit()) { this.x = this.cible; this.v = 0; return false; }
         for (let i = 0; i < 4; i++) { this.v += (-k * (this.x - this.cible) - c * this.v) * dt / 4; this.x += this.v * dt / 4; }
-        if (Math.abs(this.x - this.cible) < .002 && Math.abs(this.v) < .02) { this.x = this.cible; this.v = 0; return false; }
+        if (Math.abs(this.x - this.cible) < precision && Math.abs(this.v) < precision * 10) { this.x = this.cible; this.v = 0; return false; }
         return true;
       },
+      saut(valeur) { this.x = this.cible = valeur; this.v = 0; },
     };
+  }
+
+  // Une boucle d'animation par composant, qui s'arrête d'elle-même quand tout est au repos.
+  function boucle(etape) {
+    let image = 0, dernier = 0;
+    const tic = maintenant => {
+      const dt = Math.min((maintenant - dernier) / 1000, 1 / 30);
+      dernier = maintenant;
+      image = etape(dt) ? requestAnimationFrame(tic) : 0;
+    };
+    return () => { if (!image) { dernier = performance.now(); image = requestAnimationFrame(tic); } };
   }
 
   // Comme le Dock du Mac : ce qui est près de la souris grossit.
@@ -454,7 +521,7 @@ if (window.top !== window.self) {
   // Barre du haut : les mots grossis s'écartent, le point sous la souris reste sous la souris,
   // et le fond de la pilule s'allonge des deux côtés pour les contenir.
   function loupe(nav, { horizontal, portee, gain, decalage = 0 }) {
-    const liens = $$('a', nav);
+    const liens = $$(':scope > a, :scope > button', nav);
     const forces = liens.map(() => ressort());
     let mesures = [], q = 0, actif = false, image = 0, dernier = 0;
 
@@ -499,8 +566,10 @@ if (window.top !== window.self) {
     const lancer = () => { if (!image) { dernier = performance.now(); image = requestAnimationFrame(tic); } };
 
     nav.addEventListener('pointerenter', e => {
-      // Pas au doigt, pas si l'utilisateur a demandé moins d'animations, pas quand la pilule défile (écran étroit).
-      actif = e.pointerType !== 'touch' && !mouvementReduit() && (!horizontal || getComputedStyle(nav).overflowX === 'visible');
+      // Pas au doigt, pas si l'utilisateur a demandé moins d'animations, pas quand la pilule défile (écran étroit)
+      // ni quand ses boutons passent sur deux lignes.
+      actif = e.pointerType !== 'touch' && !mouvementReduit() && (!horizontal ||
+        (getComputedStyle(nav).overflowX === 'visible' && liens.every(l => l.offsetTop === liens[0].offsetTop)));
       if (actif) mesurer();
     });
     nav.addEventListener('pointermove', e => {
@@ -510,7 +579,8 @@ if (window.top !== window.self) {
       let proche = null, ecart = Infinity;
       mesures.forEach((m, i) => {
         const d = Math.abs(m.debut + m.taille / 2 - q);
-        const u = Math.max(0, 1 - d / portee);
+        // Mots de largeurs différentes : on mesure depuis le bord du mot, pour qu'un mot long grossisse autant qu'un court.
+        const u = Math.max(0, 1 - (horizontal ? Math.max(0, d - m.taille * .35) : d) / portee);
         forces[i].cible = u * u * (3 - 2 * u);
         if (d < ecart) { ecart = d; proche = liens[i]; }
       });
@@ -523,6 +593,200 @@ if (window.top !== window.self) {
       liens.forEach(l => l.classList.remove('proche'));
       lancer();
     });
+  }
+
+  /* ---------------------------------------------- lentille sur les graphiques */
+  // La même loupe, pour les graphiques et les commandes : chaque élément reçoit --t (0 loin du pointeur,
+  // 1 juste dessous) et le conteneur --a (0 au repos, 1 survolé). Le CSS décide ce qui grossit et ne touche
+  // jamais à ce qui porte une valeur : une barre s'épaissit ou s'élargit mais garde sa longueur, une bulle garde son aire.
+  function lentille(conteneur, selecteur, { axe = 'y', portee = 46, porteur = el => el } = {}) {
+    if (!conteneur) return;
+    conteneur.classList.add('lentille');
+    let elements = [], porteurs = [], centres = [], forces = [], actif = false;
+    const activite = ressort(.25);
+    const lancer = boucle(dt => {
+      let encore = activite.pas(dt);
+      conteneur.style.setProperty('--a', activite.x.toFixed(3));
+      forces.forEach((f, i) => {
+        if (f.pas(dt)) encore = true;
+        porteurs[i].style.setProperty('--t', f.x.toFixed(3));
+      });
+      return encore;
+    });
+    // Centres relatifs au conteneur : ils ne changent pas quand la page défile.
+    function mesurer() {
+      const nouveaux = $$(selecteur, conteneur);
+      if (nouveaux.length !== elements.length || nouveaux.some((el, i) => el !== elements[i])) {
+        porteurs.forEach(p => p.style.removeProperty('--t'));
+        elements = nouveaux;
+        porteurs = elements.map(porteur);
+        forces = elements.map(() => ressort(.2));
+      }
+      const r0 = conteneur.getBoundingClientRect();
+      centres = elements.map(el => {
+        const r = el.getBoundingClientRect();
+        return [r.left + r.width / 2 - r0.left, r.top + r.height / 2 - r0.top];
+      });
+    }
+    conteneur.addEventListener('pointerenter', e => {
+      actif = e.pointerType !== 'touch' && !mouvementReduit();
+      if (!actif) return;
+      mesurer();
+      activite.cible = 1;
+      lancer();
+    });
+    conteneur.addEventListener('pointermove', e => {
+      if (!actif) return;
+      if (!elements.length || !elements[0].isConnected) mesurer();   // graphique redessiné entre-temps
+      const r0 = conteneur.getBoundingClientRect();
+      const x = e.clientX - r0.left, y = e.clientY - r0.top;
+      centres.forEach(([cx, cy], i) => {
+        const d = axe === 'x' ? Math.abs(x - cx) : axe === 'y' ? Math.abs(y - cy) : Math.hypot(x - cx, y - cy);
+        const u = Math.max(0, 1 - d / portee);
+        forces[i].cible = u * u * (3 - 2 * u);
+      });
+      lancer();
+    });
+    conteneur.addEventListener('pointerleave', () => {
+      if (!actif) return;
+      activite.cible = 0;
+      forces.forEach(f => { f.cible = 0; });
+      lancer();
+    });
+  }
+
+  function lentilles() {
+    const lignes = '.barre-ligne:not([aria-hidden])';
+    [
+      ['#groupes-achats', lignes], ['#groupes-garde-robe', lignes],
+      ['#intervalles-flux', lignes], ['#intervalles-garde-robe', lignes],
+      ['#graphique-foret', lignes, { portee: 40 }], ['#graphique-spearman', lignes, { portee: 52 }],
+      ['#graphique-composition', lignes], ['#graphique-ratios', lignes], ['#graphique-references', lignes, { portee: 40 }],
+      ['#graphique-sensibilite', '.sensibilite-ligne', { portee: 50 }], ['#reperes', 'li', { portee: 52 }],
+      ['#graphique-distribution', '.barre', { axe: 'x', portee: 40 }], ['#mini-histo', 'i', { axe: 'x', portee: 34 }],
+      ['#barre-profils', 'i', { axe: 'x', portee: 150 }], ['#tri-variables', ':scope > div', { axe: 'x', portee: 160 }],
+      ['#graphique-concentration', '.point', { axe: 'xy', portee: 60 }],
+      ['#graphique-bulles', '.bulle', { axe: 'xy', portee: 90, porteur: el => el.parentNode }],
+      ['#graphique-cramer', '.chaleur-cellule', { axe: 'xy', portee: 85 }],
+      ['#controles', '.controle', { axe: 'xy', portee: 75 }],
+      ['#choix-profils', '.choix-profil', { axe: 'xy', portee: 240 }],
+    ].forEach(([sel, elements, options]) => lentille($(sel), elements, options));
+  }
+
+  /* --------------------------------------------- reflet sur les grandes cartes */
+  // Une lumière douce suit la souris sur les cartes colorées, comme sur un tissu satiné.
+  function reflets() {
+    $$('.heros, .heros-profil').forEach(carte => {
+      carte.prepend(h('span', { classe: 'reflet', 'aria-hidden': 'true' }));
+      const X = ressort(.2, 1, .05), Y = ressort(.2, 1, .05), O = ressort(.3);
+      let actif = false;
+      const lancer = boucle(dt => {
+        const encore = [X.pas(dt), Y.pas(dt), O.pas(dt)].some(Boolean);
+        carte.style.setProperty('--lx', X.x.toFixed(1) + 'px');
+        carte.style.setProperty('--ly', Y.x.toFixed(1) + 'px');
+        carte.style.setProperty('--lo', O.x.toFixed(3));
+        return encore;
+      });
+      const viser = (e, sauter) => {
+        const r = carte.getBoundingClientRect();
+        const x = e.clientX - r.left, y = e.clientY - r.top;
+        if (sauter) { X.saut(x); Y.saut(y); } else { X.cible = x; Y.cible = y; }
+        lancer();
+      };
+      carte.addEventListener('pointerenter', e => {
+        actif = e.pointerType === 'mouse' && !mouvementReduit();
+        if (actif) { O.cible = 1; viser(e, true); }
+      });
+      carte.addEventListener('pointermove', e => { if (actif) viser(e, false); });
+      carte.addEventListener('pointerleave', () => { if (actif) { O.cible = 0; lancer(); } });
+    });
+  }
+
+  /* ------------------------------------ goutte de verre, barre d'onglets du téléphone */
+  // Au doigt : une goutte de verre suit le doigt le long de la barre et soulève l'icône dessous ;
+  // en relâchant, la page sous le doigt s'ouvre (comme sur les iPhone récents). Un simple appui reste un appui.
+  // Le fond de l'onglet actif glisse d'un onglet à l'autre quand on change de page.
+  function goutteOnglets() {
+    const barre = $('.onglets');
+    const items = $$(':scope > a, :scope > button', barre);
+    const goutte = h('span', { classe: 'goutte', 'aria-hidden': 'true' });
+    const fond = h('span', { classe: 'onglet-fond', 'aria-hidden': 'true' });
+    barre.prepend(fond, goutte);
+    const G = ressort(.3, .75, .05), O = ressort(.2), F = ressort(.4, .8, .05), L = ressort(.4, 1, .05);
+    let survole = null, depart = null, glisse = false, bloquerClic = false;
+
+    const centre = el => el.offsetLeft + el.offsetWidth / 2;
+    const courant = () => items.find(el => el.getAttribute('aria-current') === 'page' || el.classList.contains('actif'));
+    function placer(el, x, largeur, vitesse, echelle) {
+      const etirement = mouvementReduit() ? 0 : Math.min(Math.abs(vitesse) / 2600, .28);
+      el.style.width = largeur.toFixed(1) + 'px';
+      el.style.transform = `translate3d(${(x - largeur / 2).toFixed(2)}px,0,0) scale(${((1 + etirement) * echelle).toFixed(4)},${((1 - etirement * .45) * echelle).toFixed(4)})`;
+    }
+    const lancer = boucle(dt => {
+      const encore = [G.pas(dt), O.pas(dt), F.pas(dt), L.pas(dt)].some(Boolean);
+      placer(goutte, G.x, items[0].offsetWidth + 8, G.v, .72 + .28 * O.x);
+      goutte.style.opacity = borne(O.x, 0, 1).toFixed(3);
+      placer(fond, F.x, L.x, F.v, 1);
+      fond.style.opacity = courant() ? '1' : '0';
+      return encore;
+    });
+    function viserActif(sauter) {
+      const el = courant();
+      if (!el) return lancer();
+      if (sauter) { F.saut(centre(el)); L.saut(el.offsetWidth); } else { F.cible = centre(el); L.cible = el.offsetWidth; }
+      lancer();
+    }
+    function montrer(clientX, sauter) {
+      const r = barre.getBoundingClientRect();
+      const x = borne(clientX - r.left - barre.clientLeft, centre(items[0]), centre(items[items.length - 1]));
+      let proche = items[0];
+      for (const el of items) if (Math.abs(centre(el) - x) < Math.abs(centre(proche) - x)) proche = el;
+      if (sauter || (O.cible === 0 && O.x < .05)) G.saut(x); else G.cible = x;
+      O.cible = 1;
+      if (survole !== proche) { survole?.classList.remove('sous-goutte'); proche.classList.add('sous-goutte'); survole = proche; }
+      lancer();
+    }
+    function cacher() {
+      O.cible = 0;
+      survole?.classList.remove('sous-goutte');
+      survole = null;
+      depart = null;
+      lancer();
+    }
+
+    barre.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse') return;
+      // Sans capture, le relâchement arrive sur l'onglet sous le doigt, pas sur celui du départ.
+      if (e.target.hasPointerCapture?.(e.pointerId)) e.target.releasePointerCapture(e.pointerId);
+      depart = e.clientX;
+      glisse = false;
+      montrer(e.clientX, true);
+    });
+    barre.addEventListener('pointermove', e => {
+      if (e.pointerType === 'mouse') return montrer(e.clientX, false);
+      if (depart == null) return;
+      if (Math.abs(e.clientX - depart) > 10) glisse = true;
+      montrer(e.clientX, false);
+    });
+    barre.addEventListener('pointerup', e => {
+      if (e.pointerType === 'mouse' || depart == null) return;
+      const choisi = survole;
+      cacher();
+      if (glisse && choisi) {
+        choisi.click();
+        // Le navigateur envoie parfois son propre clic après un glissé : on l'ignore.
+        bloquerClic = true;
+        setTimeout(() => { bloquerClic = false; }, 400);
+      }
+    });
+    barre.addEventListener('pointercancel', cacher);
+    barre.addEventListener('pointerleave', cacher);
+    barre.addEventListener('click', e => { if (bloquerClic) { e.preventDefault(); e.stopPropagation(); bloquerClic = false; } }, true);
+
+    addEventListener('hashchange', () => requestAnimationFrame(() => viserActif(false)));
+    $('#bouton-plus').addEventListener('click', () => requestAnimationFrame(() => viserActif(false)));
+    addEventListener('resize', () => viserActif(true));
+    viserActif(true);
   }
 
   /* -------------------------------------------------------------- aperçu */
@@ -583,10 +847,8 @@ if (window.top !== window.self) {
       const barres = s('g', {}, svg);
       classes.forEach(c => {
         const fin = c.fin ?? xMax, x0 = x(c.debut) + 1, x1 = x(fin) - 1, yh = y(c.pct), yb = y(0), r = Math.min(3, (x1 - x0) / 2, yb - yh);
-        const barre = s('path', { classe: 'barre', d: `M${x0},${yb}V${yh + r}Q${x0},${yh} ${x0 + r},${yh}H${x1 - r}Q${x1},${yh} ${x1},${yh + r}V${yb}Z` }, barres);
+        s('path', { classe: 'barre', d: `M${x0},${yb}V${yh + r}Q${x0},${yh} ${x0 + r},${yh}H${x1 - r}Q${x1},${yh} ${x1},${yh + r}V${yb}Z` }, barres);
         const zone = s('rect', { classe: 'zone-survol', x: x(c.debut), width: x(fin) - x(c.debut), y: m.h, height: hp }, svg);
-        zone.addEventListener('pointerenter', () => barres.querySelectorAll('.barre').forEach(b => b.classList.toggle('estompee', b !== barre)));
-        zone.addEventListener('pointerleave', () => barres.querySelectorAll('.barre').forEach(b => b.classList.remove('estompee')));
         infobulle(zone, () => [c.fin == null ? `${c.debut} pièces et plus` : `De ${c.debut} à ${c.fin} pièces`, `${pct(c.pct)} des Français`]);
       });
       const repere = (v, texte, ancre, ligne) => {
@@ -623,10 +885,8 @@ if (window.top !== window.self) {
       s('path', { classe: 'aire', d: `${chemin}L${x(100)},${y(0)}Z` }, svg);
       s('path', { classe: 'ligne', d: chemin }, svg);
       pts.slice(1, -1).forEach(p => {
-        const point = s('circle', { classe: 'point', cx: x(p.x), cy: y(p.y), r: 4.5, remplir: 'var(--p1)' }, svg);
+        s('circle', { classe: 'point', cx: x(p.x), cy: y(p.y), r: 4.5, remplir: 'var(--p1)' }, svg);
         const zone = s('circle', { classe: 'zone-survol', cx: x(p.x), cy: y(p.y), r: 15, tabindex: '0' }, svg);
-        zone.addEventListener('pointerenter', () => point.setAttribute('r', 6.5));
-        zone.addEventListener('pointerleave', () => point.setAttribute('r', 4.5));
         infobulle(zone, () => [`Les ${p.x}${ESP}% plus gros acheteurs`, `réalisent ${pct(p.y)} des achats de vêtements`]);
       });
       el.replaceChildren(svg);

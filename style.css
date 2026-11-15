@@ -38,6 +38,9 @@
 
   --porte-1: #8fb0ee; --porte-2: #5f8ae0; --porte-3: #b4c9f3; --porte-4: #3f6fd1;
   --dort: #c5cad6;
+  /* Verre (goutte de la barre d'onglets) */
+  --verre: rgba(21, 23, 30, .05); --verre-haut: rgba(255, 255, 255, .95); --verre-bord: rgba(255, 255, 255, .8);
+  --verre-creux: rgba(17, 20, 31, .10); --verre-ombre: rgba(17, 20, 31, .30);
 
   --texte: "Schibsted Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
   --rayon: 18px;
@@ -59,6 +62,8 @@
     --seq-0: #1b2350; --seq-1: #233572; --seq-2: #2d4c9c; --seq-3: #4569c4; --seq-4: #6f91e0; --seq-5: #a9c0f2;
     --seq-t0: #bcc1d9; --seq-t1: #eceef7; --seq-t2: #fff; --seq-t3: #fff; --seq-t4: #0d1230; --seq-t5: #0d1230;
     --dort: #3a3e4c;
+    --verre: rgba(255, 255, 255, .07); --verre-haut: rgba(255, 255, 255, .42); --verre-bord: rgba(255, 255, 255, .2);
+    --verre-creux: rgba(0, 0, 0, .4); --verre-ombre: rgba(0, 0, 0, .7);
   }
 }
 :root[data-theme="dark"] {
@@ -73,6 +78,8 @@
   --seq-0: #1b2350; --seq-1: #233572; --seq-2: #2d4c9c; --seq-3: #4569c4; --seq-4: #6f91e0; --seq-5: #a9c0f2;
   --seq-t0: #bcc1d9; --seq-t1: #eceef7; --seq-t2: #fff; --seq-t3: #fff; --seq-t4: #0d1230; --seq-t5: #0d1230;
   --dort: #3a3e4c;
+  --verre: rgba(255, 255, 255, .07); --verre-haut: rgba(255, 255, 255, .42); --verre-bord: rgba(255, 255, 255, .2);
+  --verre-creux: rgba(0, 0, 0, .4); --verre-ombre: rgba(0, 0, 0, .7);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -295,12 +302,22 @@ a.carte:hover .lien-carte { color: var(--encre); }
 .heros .texte-carte { color: rgba(255, 255, 255, .9); }
 
 /* ============================================================== COMMANDES */
-.segments { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; background: var(--carte-2); border-radius: 999px; border: 1px solid var(--trait); }
+/* Comme la pilule du haut, le fond est dessiné à part pour pouvoir s'allonger sous la loupe.
+   Rayon de 20 px : sur une ligne c'est une pilule, sur deux lignes un rectangle arrondi propre. */
+.segments { position: relative; isolation: isolate; display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 4px; }
+.segments::before {
+  content: ""; position: absolute; z-index: -1; top: 0; bottom: 0;
+  left: calc(-1 * var(--g, 0px)); right: calc(-1 * var(--d, 0px));
+  background: var(--carte-2); border: 1px solid var(--trait); border-radius: 20px;
+}
 .segments button {
-  border: 0; background: transparent; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 500;
+  position: relative; border: 0; background: transparent; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 500;
   color: var(--encre-2); white-space: nowrap; transition: background-color .2s, color .2s, box-shadow .2s;
 }
-.segments button:hover { color: var(--encre); }
+.segments button:hover, .segments button.proche { color: var(--encre); }
+.segments button.devant { z-index: 1; }
+/* Carte étroite à cinq choix : boutons resserrés pour tenir sur une ligne. */
+#choix-composition button { padding: 6px 9px; font-size: 12.5px; }
 .segments button[aria-pressed="true"] { background: var(--carte); color: var(--encre); font-weight: 600; box-shadow: 0 1px 3px rgba(17, 20, 31, .14); }
 .filtres { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
 .etiquette-filtre { font-size: 13px; color: var(--encre-3); }
@@ -328,8 +345,7 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
 .graphique .reference { stroke: var(--garance); stroke-width: 1.5; }
 .graphique .ref-texte { fill: var(--garance-texte); font-weight: 600; }
 .graphique .zone-survol { fill: transparent; cursor: crosshair; }
-.graphique .barre { fill: var(--p1); transition: opacity .2s; }
-.graphique .barre.estompee { opacity: .35; }
+.graphique .barre { fill: var(--p1); }
 .graphique .ligne { fill: none; stroke: var(--p1); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
 .graphique .aire { fill: var(--p1); opacity: .1; }
 .graphique .egalite { stroke: var(--trait-fort); stroke-width: 1.5; }
@@ -402,7 +418,7 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
 
 .chaleur { display: grid; gap: 3px; font-size: 12.5px; }
 .chaleur-cellule { height: 38px; border-radius: 6px; display: grid; place-items: center; font-size: 12px; background: var(--c); color: var(--textec); transition: transform .15s var(--ressort); }
-.chaleur-cellule:hover, .chaleur-cellule:focus-visible { transform: scale(1.07); position: relative; z-index: 1; }
+.chaleur-cellule:focus-visible { transform: scale(1.07); position: relative; z-index: 11; }
 .chaleur-ligne-nom { display: flex; align-items: center; color: var(--encre-2); padding-right: 8px; line-height: 1.2; }
 .chaleur-col-nom { align-self: end; text-align: center; font-size: 11.5px; line-height: 1.2; color: var(--encre-2); padding: 0 2px 6px; }
 .echelle { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--encre-3); }
@@ -412,6 +428,8 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
 .s2 { --c: var(--seq-2); --textec: var(--seq-t2); } .s3 { --c: var(--seq-3); --textec: var(--seq-t3); }
 .s4 { --c: var(--seq-4); --textec: var(--seq-t4); } .s5 { --c: var(--seq-5); --textec: var(--seq-t5); }
 .tableau-defile { overflow-x: auto; }
+/* Marge intérieure pour que les cases grossies par la loupe ne déclenchent pas de barre de défilement. */
+.defile-chaleur { overflow-y: hidden; padding: 6px; margin: -6px; }
 
 .segmentee { display: flex; gap: 3px; height: 38px; }
 .segmentee > div { position: relative; min-width: 0; flex: var(--part) 1 0; background: var(--c); border-radius: 7px; display: flex; align-items: center; justify-content: center; padding: 0 4px; color: var(--textec, #fff); }
@@ -441,7 +459,9 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
 .ratios .barre-nom .ico { width: 17px; height: 17px; color: var(--encre-3); }
 
 /* ======================================================== PENDERIE */
-.penderie { position: relative; width: 100%; color: var(--encre-3); margin: 0; }
+.penderie { position: relative; width: 100%; color: var(--encre-3); margin: 0; touch-action: pan-y; }
+/* Chaque vêtement pivote autour du haut de son crochet (voir « balancement » dans app.js). */
+.penderie .balancier { transform-box: fill-box; transform-origin: 50% 0; }
 .penderie svg { width: 100%; height: auto; overflow: visible; }
 .penderie .tringle { stroke: currentColor; stroke-width: 3; stroke-linecap: round; opacity: .5; }
 .penderie .crochet { fill: none; stroke: currentColor; stroke-width: 1.4; opacity: .7; }
@@ -563,12 +583,27 @@ td.n, th.n { text-align: right; white-space: nowrap; }
   border: 1px solid var(--trait); border-radius: 22px; box-shadow: 0 10px 30px -10px rgba(10, 12, 20, .35);
 }
 .onglets a, .onglets button {
-  flex: 1; min-width: 0; height: 52px; border: 0; background: transparent; border-radius: 16px; text-decoration: none;
+  position: relative; z-index: 2; flex: 1; min-width: 0; height: 52px; border: 0; background: transparent; border-radius: 16px; text-decoration: none;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  font-size: 11px; font-weight: 600; color: var(--encre-3);
+  font-size: 11px; font-weight: 600; color: var(--encre-3); -webkit-tap-highlight-color: transparent;
 }
-.onglets [aria-current="page"], .onglets button[aria-expanded="true"] { color: var(--encre); background: var(--carte-2); }
+.onglets [aria-current="page"], .onglets button[aria-expanded="true"] { color: var(--encre); }
+.onglets button[aria-expanded="true"] { background: var(--carte-2); }
 .onglets [aria-current="page"] .ico { color: var(--garance); }
+/* Le fond de l'onglet actif glisse d'un onglet à l'autre ; la goutte de verre suit le doigt. */
+.onglets { touch-action: none; isolation: isolate; }
+.onglet-fond, .onglets .goutte { position: absolute; left: 0; pointer-events: none; will-change: transform; }
+.onglet-fond { z-index: 0; top: 6px; height: 52px; border-radius: 16px; background: var(--carte-2); }
+.onglets .goutte {
+  z-index: 1; top: 50%; height: 60px; margin-top: -30px; border-radius: 22px; opacity: 0;
+  background: linear-gradient(180deg, var(--verre-haut) -35%, transparent 52%), var(--verre);
+  box-shadow: inset 0 1px .5px var(--verre-haut), inset 0 0 0 1px var(--verre-bord), inset 0 -3px 8px var(--verre-creux),
+    0 12px 24px -12px var(--verre-ombre), 0 2px 6px -2px var(--verre-ombre);
+  backdrop-filter: blur(1.5px) saturate(1.8); -webkit-backdrop-filter: blur(1.5px) saturate(1.8);
+}
+.onglets .ico { transition: scale .22s var(--ressort), translate .22s var(--ressort); }
+.onglets .sous-goutte { color: var(--encre); }
+.onglets .sous-goutte .ico { scale: 1.24; translate: 0 -2px; }
 .feuille {
   position: fixed; z-index: 31; left: 10px; right: 10px; bottom: calc(80px + env(safe-area-inset-bottom));
   background: var(--carte); border: 1px solid var(--trait); border-radius: 20px; padding: 8px;
@@ -576,6 +611,62 @@ td.n, th.n { text-align: right; white-space: nowrap; }
 }
 .feuille a { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; text-decoration: none; font-weight: 600; }
 .feuille a:hover, .feuille a[aria-current="page"] { background: var(--carte-2); }
+
+/* ======================================================= LENTILLE */
+/* Posée par app.js sur les graphiques et les commandes. --t : 0 loin du pointeur, 1 juste dessous ;
+   --a : 0 au repos, 1 quand on survole. On grossit étiquettes, points et épaisseurs, jamais la longueur
+   d'une barre ni l'aire d'une bulle : la lecture des valeurs reste juste pendant la loupe. Ces règles
+   utilisent la propriété « scale », distincte de « transform », pour ne pas gêner les animations d'entrée. */
+.lentille .barre-ligne:not([aria-hidden]), .lentille .sensibilite-ligne, .reperes.lentille li,
+#graphique-bulles.lentille g[role="button"], .chaleur.lentille .chaleur-cellule, .segmentee.lentille > div {
+  opacity: calc(1 - var(--a, 0) * (1 - var(--t, 0)) * .45);
+}
+.lentille .barre-nom { transform-origin: 0 50%; scale: calc(1 + .07 * var(--t, 0)); }
+.lentille .barre-remplie, .lentille .sp-barre, .lentille .fourchette-seg, .lentille .compo-total { scale: 1 calc(1 + .45 * var(--t, 0)); }
+.lentille .foret-ic, .lentille .ratio-seg { scale: 1 calc(1 + 1.2 * var(--t, 0)); }
+.lentille .foret-point, .lentille .fourchette-pt, .lentille .ratio-point, .lentille .ecart-point { scale: calc(1 + .5 * var(--t, 0)); }
+.lentille .barre-valeur, .lentille .fourchette-val, .lentille .ecart-val, .lentille .foret-val.droite, .lentille .sp-val.droite {
+  transform-origin: 0 50%; scale: calc(1 + .14 * var(--t, 0));
+}
+.lentille .foret-val.gauche, .lentille .sp-val.gauche, .lentille .ratio-val, .reperes.lentille .val {
+  transform-origin: 100% 50%; scale: calc(1 + .14 * var(--t, 0));
+}
+.lentille .sensibilite-ligne .segmentee { scale: calc(1 + .03 * var(--t, 0)); }
+.reperes.lentille .pastille-ico { scale: calc(1 + .22 * var(--t, 0)); }
+.reperes.lentille li > div { transform-origin: 0 50%; scale: calc(1 + .04 * var(--t, 0)); }
+
+/* Histogrammes : la barre s'élargit (sa hauteur, qui porte la valeur, ne bouge pas). */
+.graphique.lentille .barre { transform-box: fill-box; transform-origin: 50% 100%; scale: calc(1 + .3 * var(--t, 0)) 1;
+  opacity: calc(1 - var(--a, 0) * (1 - var(--t, 0)) * .55); }
+.mini-histo.lentille i { scale: calc(1 + .55 * var(--t, 0)) 1; }
+.mini-histo.lentille i:not(.mediane) { background: rgba(255, 255, 255, calc(.45 + .5 * var(--t, 0) - .2 * var(--a, 0) * (1 - var(--t, 0)))); }
+/* Barre des profils : chaque part s'épaissit (sa largeur reste la part de la population) et son icône grossit. */
+.barre-profils.lentille i { scale: 1 calc(1 + .18 * var(--t, 0)); }
+.barre-profils.lentille i .ico { scale: calc(1 + .4 * var(--t, 0)) calc((1 + .4 * var(--t, 0)) / (1 + .18 * var(--t, 0))); }
+/* Points, cases et cartes : grossissement en deux dimensions. */
+.graphique.lentille .point { transform-box: fill-box; transform-origin: center; scale: calc(1 + .6 * var(--t, 0)); }
+#graphique-bulles.lentille .bulle-texte { transform-box: fill-box; transform-origin: center; scale: calc(1 + .1 * var(--t, 0)); }
+.chaleur.lentille .chaleur-cellule { position: relative; z-index: calc(var(--t, 0) * 10); scale: calc(1 + .16 * var(--t, 0)); }
+.segmentee.lentille > div { z-index: calc(var(--t, 0) * 10); scale: calc(1 + .07 * var(--t, 0)); }
+.controles-grille.lentille .controle { position: relative; z-index: calc(var(--t, 0) * 10); scale: calc(1 + .3 * var(--t, 0)); }
+.choix-profils.lentille .choix-profil { scale: calc(1 + .035 * var(--t, 0)); }
+
+/* Petits boutons et curseurs : l'icône ou la poignée grossit sous la souris. */
+.bouton-rond .ico, .bouton-info .ico, .lien-carte, .badge-verre .ico { transition: scale .2s var(--ressort); }
+.bouton-rond:hover .ico, .bouton-info:hover .ico { scale: 1.16; }
+a.carte:hover .lien-carte { scale: 1.06; }
+.bouton-blanc:hover { transform: translateY(-1px) scale(1.035); }
+input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.18); }
+input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.28); }
+input[type="range"]::-moz-range-thumb { transition: transform .15s var(--ressort); }
+input[type="range"]:hover::-moz-range-thumb { transform: scale(1.18); }
+input[type="range"]:active::-moz-range-thumb { transform: scale(1.28); }
+
+/* Reflet : une lumière douce qui suit la souris sur les grandes cartes colorées. */
+.reflet {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit; opacity: var(--lo, 0);
+  background: radial-gradient(400px circle at var(--lx, 50%) var(--ly, 50%), rgba(255, 255, 255, .3), transparent 62%);
+}
 
 /* ===================================================== ANIMATIONS */
 /* Entrée d'une vue, à la première visite seulement : la carte principale mène, les autres suivent. */
