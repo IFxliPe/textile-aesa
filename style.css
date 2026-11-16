@@ -584,17 +584,21 @@ td.n, th.n { text-align: right; white-space: nowrap; }
 .bulle-info b { display: block; margin-bottom: 4px; }
 
 /* =========================================================== MOBILE */
-/* Barre d'onglets ancrée au bas de l'écran, pleine largeur et opaque, comme dans une application :
-   le contenu s'arrête au-dessus et ne se voit jamais dessous ni sur les côtés. Le remplissage du bas
-   couvre la zone de l'indicateur d'accueil et de la barre de Safari. */
+/* Barre d'onglets : une carte arrondie et opaque qui flotte au-dessus du bas de l'écran, avec de l'air autour. */
 .onglets {
-  display: none; position: fixed; z-index: 30; left: 0; right: 0; bottom: 0;
-  padding: 6px max(10px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
-  gap: 2px; background: var(--carte); border-top: 1px solid var(--trait);
-  box-shadow: 0 -10px 28px -18px rgba(10, 12, 20, .35);
+  display: none; position: fixed; z-index: 30;
+  left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); bottom: calc(12px + env(safe-area-inset-bottom));
+  padding: 6px; gap: 2px; background: var(--carte); border: 1px solid var(--trait); border-radius: 22px;
+  box-shadow: 0 10px 30px -12px rgba(10, 12, 20, .35);
 }
-/* Si le navigateur laisse un espace sous la barre (barre d'adresse de Safari dépliée), il garde la couleur de la barre. */
-.onglets::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 160px; background: var(--carte); }
+/* Socle : une bande de la couleur du fond derrière la barre, jusqu'au bas de l'écran. Le contenu s'y fond
+   avant d'atteindre la barre, et ne se voit jamais dessous, sur les côtés ni sous la barre de Safari. */
+.socle-onglets {
+  display: none; position: fixed; z-index: 29; left: 0; right: 0; bottom: 0; pointer-events: none;
+  height: calc(100px + env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--fond) 0%, transparent), var(--fond) 22px);
+}
+.socle-onglets::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 160px; background: var(--fond); }
 .onglets a, .onglets button {
   position: relative; z-index: 2; flex: 1; min-width: 0; height: 52px; border: 0; background: transparent; border-radius: 16px; text-decoration: none;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
@@ -618,7 +622,7 @@ td.n, th.n { text-align: right; white-space: nowrap; }
 .onglets .sous-goutte { color: var(--encre); }
 .onglets .sous-goutte .ico { scale: 1.24; translate: 0 -2px; }
 .feuille {
-  position: fixed; z-index: 31; left: 10px; right: 10px; bottom: calc(76px + env(safe-area-inset-bottom));
+  position: fixed; z-index: 31; left: 12px; right: 12px; bottom: calc(88px + env(safe-area-inset-bottom));
   background: var(--carte); border: 1px solid var(--trait); border-radius: 20px; padding: 8px;
   box-shadow: 0 16px 40px -12px rgba(10, 12, 20, .4); display: grid; gap: 2px; animation: monte .22s var(--ressort) both;
 }
@@ -738,7 +742,8 @@ input[type="range"]:active::-moz-range-thumb { transform: scale(1.28); }
   .onglets { display: flex; }
   .barre { padding: 0 16px; }
   .barre-actions { margin-left: auto; }
-  .principal { padding: 4px 16px calc(88px + env(safe-area-inset-bottom)); }
+  .principal { padding: 4px 16px calc(108px + env(safe-area-inset-bottom)); }
+  .socle-onglets { display: block; }
   .bento { gap: 12px; }
   .l-3 { grid-column: span 6; }
   .l-4, .l-5, .l-6, .l-7, .l-8 { grid-column: span 12; }
@@ -759,7 +764,7 @@ input[type="range"]:active::-moz-range-thumb { transform: scale(1.28); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; transition-delay: 0ms !important; }
 }
-@media print { .barre, .rail, .onglets, .sas { display: none !important; } .vue { display: block !important; } }
+@media print { .barre, .rail, .onglets, .socle-onglets, .sas { display: none !important; } .vue { display: block !important; } }
 
 /* Compléments */
 .garance-texte { color: var(--garance-texte); }
