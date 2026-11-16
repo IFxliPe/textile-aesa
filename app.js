@@ -1,4 +1,4 @@
-/* Penderie – application du tableau de bord « Consommation textile et AESA ».
+/* Textile & AESA – application du tableau de bord « Consommation textile et AESA ».
    1. Le sas déchiffre le contenu (PBKDF2 + AES-GCM avec Web Crypto, rien n'est envoyé).
    2. Une page par thème, choisie par l'ancre de l'adresse (#achats, #profils…).
    3. Graphiques dessinés à la main : SVG pour les courbes, barres HTML animées par transform.
@@ -431,7 +431,7 @@ if (window.top !== window.self) {
       fermerFeuille();
       fermerInfo();
       masquerBulle();
-      document.title = `${TITRES[vue]} – Penderie`;
+      document.title = `${TITRES[vue]} – Textile & AESA`;
 
       section.classList.remove('entree', 'retour');
       void section.offsetWidth;

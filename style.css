@@ -1,4 +1,4 @@
-/* Penderie – tableau de bord « Consommation textile et AESA »
+/* Textile & AESA – tableau de bord « Consommation textile et AESA »
    Interface d'application : surfaces neutres, cartes en mosaïque, un seul accent vif,
    le rouge garance (teinture textile historique). Données en bleu denim.
    Une seule famille : Schibsted Grotesk. */
@@ -141,7 +141,7 @@ h1, h2, h3 { margin: 0; }
   background: color-mix(in srgb, var(--fond) 82%, transparent);
   backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px);
 }
-.logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+.logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; font-size: 16px; letter-spacing: -0.01em; white-space: nowrap; flex: none; }
 .logo-pastille { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: var(--degrade); color: #fff; }
 /* Le fond de la pilule est dessiné à part : il s'allonge quand les mots grossissent sous la souris (--g à gauche, --d à droite). */
 .nav-pilule { position: relative; isolation: isolate; margin: 0 auto; display: flex; gap: 2px; padding: 5px; }
@@ -709,7 +709,8 @@ input[type="range"]:active::-moz-range-thumb { transform: scale(1.28); }
 
 /* ====================================================== ADAPTATION */
 @media (max-width: 1180px) {
-  .puce-projet div span { display: none; }
+  /* Le nom « Textile & AESA » dit déjà le projet : la puce « Projet P01 » laisse sa place à la barre de pages. */
+  .puce-projet { display: none; }
   .l-3 { grid-column: span 6; } .l-4 { grid-column: span 6; }
   .l-5, .l-7, .l-8 { grid-column: span 12; }
   .choix-profils { grid-template-columns: repeat(3, minmax(0, 1fr)); }
